@@ -20,6 +20,6 @@ setup(name="jellyfish",
                    "Programming Language :: Python",
                    "Topic :: Text Processing :: Linguistic"],
       cmdclass={'build_ext': build_ext},
-      ext_modules=[Extension("jellyfish", ['jellyfish.pyx'])],
+      ext_modules=[Extension("jellyfish", ['jellyfish.pyx', 'porter.c'])],
       install_requires=["cython"],
 )

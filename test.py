@@ -111,5 +111,25 @@ class JellyfishTestCase(unittest.TestCase):
             self.assertAlmostEqual(jellyfish.jaro_distance(s1, s2), value,
                                    places=3)
 
+    def test_hamming_distance(self):
+        cases = [("", "", 0),
+                 ("", "abc", 3),
+                 ("abc", "abc", 0),
+                 ("acc", "abc", 1),
+                 ("abcd", "abc", 1),
+                 ("abc", "abcd", 1),
+                 ("testing", "this is a test", 13),
+                 ]
+
+        for (s1, s2, value) in cases:
+            self.assertEqual(jellyfish.hamming_distance(s1, s2), value)
+
+    def test_porter_stem(self):
+        with open('porter-test.csv') as f:
+            reader = csv.reader(f)
+            for (a, b) in reader:
+                self.assertEqual(jellyfish.porter_stem(a.lower()), b.lower())
+
+
 if __name__ == '__main__':
     unittest.main()

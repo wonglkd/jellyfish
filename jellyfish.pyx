@@ -809,3 +809,74 @@ def jaro_distance(ying, yang):
         yang = tounicode(yang)
 
     return _jaro_winkler(ying, yang, False, False)
+
+
+def hamming_distance(s1, s2):
+    if not isinstance(s1, unicode):
+        s1 = tounicode(s1)
+    if not isinstance(s2, unicode):
+        s2 = tounicode(s2)
+
+    return _hamming_distance(s1, s2)
+
+cdef unsigned _hamming_distance(unicode s1, unicode s2):
+    cdef:
+        unsigned dist = 0
+
+        Py_ssize_t s1_len = len(s1)
+        Py_ssize_t s2_len = len(s2)
+        Py_ssize_t min_len = _min(s1_len, s2_len)
+
+        char c1, c2
+
+        Py_ssize_t i = 0
+
+    for i in range(0, min_len):
+        if s1[i] != s2[i]:
+            dist += 1
+
+    for i in range(min_len, s1_len):
+        dist += 1
+
+    for i in range(min_len, s2_len):
+        dist += 1
+
+    return dist
+
+
+cdef extern struct stemmer
+cdef extern stemmer* create_stemmer()
+cdef extern void free_stemmer(stemmer* z)
+cdef extern int stem(stemmer* z, char * b, int k)
+
+
+def porter_stem(s):
+    cdef uni = False
+    if isinstance(s, unicode):
+        s = s.encode('ASCII')
+        uni = True
+
+    cdef:
+        stemmer* z = create_stemmer()
+
+        char* word = s
+        char* result = strdup(word)
+
+        int end = stem(z, result, len(result) - 1)
+
+        object str_result
+        unicode uni_result
+
+    result[end + 1] = 0
+
+    free(z)
+
+    if uni:
+        uni_result = result.decode('ASCII')
+        free(result)
+        return uni_result
+
+    str_result = result
+    free(result)
+    return str_result
+
