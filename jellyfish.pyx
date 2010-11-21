@@ -1,13 +1,15 @@
 from libc.stdlib cimport *
 
-cdef extern from "ctype.h":
-    int toupper(int)
+# libc toupper is complicated by locale check, etc.
+# Since most of these algorithms are only defined over plain ASCII characters
+# we can use this simple toupper.
+# Amazingly, switching toupper's led to a 4x speed improvement in metaphone, 3x in
+# soundex.
+cdef char toupper(char c):
+    if c >= 'a' and c <= 'z':
+        return c - 32
+    return c
 
-cdef extern from "stdlib.h":
-    void *memset(void *str, int c, size_t n)
-
-cdef char upper_char(char c):
-    return <char>toupper(<int>c)
 
 def soundex(s):
     cdef short uni = False
@@ -23,7 +25,7 @@ def soundex(s):
     if word_len == 0:
         return "0000"
 
-    result[0] = upper_char(word[0])
+    result[0] = toupper(word[0])
     result[1] = '0'
     result[2] = '0'
     result[3] = '0'
@@ -37,7 +39,7 @@ def soundex(s):
         char c
 
     for c in word[:word_len]:
-        c = upper_char(c)
+        c = toupper(c)
         loops += 1
 
         if c in [66, 70, 80, 86]:
@@ -78,7 +80,7 @@ def soundex(s):
 
 
 def metaphone(s):
-    s = s.upper()
+   # s = s.upper()
 
     cdef short uni = False
     if isinstance(s, unicode):
@@ -102,9 +104,9 @@ def metaphone(s):
         object str_result
         unicode uni_result
 
-    c = word[0]
+    c = toupper(word[0])
     if c:
-        _next = word[1]
+        _next = toupper(word[1])
 
         if ((c == 'K' and _next == 'N') or
             (c == 'G' and _next == 'N') or
@@ -115,49 +117,49 @@ def metaphone(s):
 
             sp += 1
 
-    _next = word[sp]
+    _next = toupper(word[sp])
     sp2 = sp - 1
     rp = 0
     while sp2 < word_len:
         sp2 += 1
         c = _next
-        _next = word[sp2 + 1]
+        _next = toupper(word[sp2 + 1])
 
         if c == _next and c != 'C':
             continue
 
         if c in [65, 69, 73, 79, 85]:  # AEIOU
-            if sp2 == sp or word[sp2 - 1] == ' ':
+            if sp2 == sp or toupper(word[sp2 - 1]) == ' ':
                 result[rp] = c;
                 rp += 1
         elif c == 'B':
-            if (not (sp2 > sp and word[sp2 - 1] == 'M')) or _next:
+            if (not (sp2 > sp and toupper(word[sp2 - 1]) == 'M')) or _next:
                 result[rp] = 'B'
                 rp += 1
         elif c == 'C':
-            if (_next == 'I' and word[sp2 + 2] == 'A') or _next == 'H':
+            if (_next == 'I' and toupper(word[sp2 + 2]) == 'A') or _next == 'H':
                 result[rp] = 'X'
                 rp += 1
 
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
             elif _next == 'I' or _next == 'E' or _next == 'Y':
                 result[rp] = 'S'
                 rp += 1
 
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
             else:
                 result[rp] = 'K'
                 rp += 1
         elif c == 'D':
-            temp = word[sp2 + 2]
+            temp = toupper(word[sp2 + 2])
             if _next == 'G' and (temp == 'E' or temp == 'Y' or temp == 'I'):
                 result[rp] = 'J'
                 rp += 1
 
                 sp2 += 2
-                next = word[sp2 + 1]
+                _next = toupper(word[sp2 + 1])
             else:
                 result[rp] = 'T'
                 rp += 1
@@ -172,10 +174,10 @@ def metaphone(s):
                 result[rp] = 'K'
                 rp += 1
             elif _next == 'H':
-                temp = word[sp2 + 2]
+                temp = toupper(word[sp2 + 2])
                 if temp in [65, 69, 73, 79, 85]:
                     sp2 += 1
-                    _next = word[sp2 + 1]
+                    _next = toupper(word[sp2 + 1])
             elif _next != 'N':
                 result[rp] = 'K'
                 rp += 1
@@ -186,7 +188,7 @@ def metaphone(s):
             else:
                 # We don't roll this into the above if because we can't
                 # grab temp until we know sp2 != sp (sp may be 0)
-                temp = word[sp2 - 1]
+                temp = toupper(word[sp2 - 1])
                 if temp in [65, 69, 73, 79, 85]:
                     result[rp] = 'H'
                     rp += 1
@@ -194,7 +196,7 @@ def metaphone(s):
             result[rp] = 'J'
             rp += 1
         elif c == 'K':
-            if sp2 == sp or word[sp2 - 1] != 'C':
+            if sp2 == sp or toupper(word[sp2 - 1]) != 'C':
                 result[rp] = 'K'
                 rp += 1
         elif c == 'L':
@@ -211,7 +213,7 @@ def metaphone(s):
             rp += 1
 
             if _next == 'H':
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
         elif c == 'Q':
             result[rp] = 'K'
@@ -224,20 +226,20 @@ def metaphone(s):
                 result[rp] = 'X'
                 rp += 1
 
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
             elif _next == 'I':
-                temp = word[sp2 + 2]
+                temp = toupper(word[sp2 + 2])
                 if temp == 'O' or temp == 'A':
                     result[rp] = 'X'
                     rp += 1
                     sp2 += 2
-                    _next = word[sp2 + 1]
+                    _next = toupper(word[sp2 + 1])
             else:
                 result[rp] = 'S'
                 rp += 1
         elif c == 'T':
-            temp = word[sp2 + 2]
+            temp = toupper(word[sp2 + 2])
             if _next == 'I' and (temp == 'A' or temp == 'O'):
                 result[rp] = 'X'
                 rp += 1
@@ -245,7 +247,7 @@ def metaphone(s):
                 result[rp] = '0'
                 rp += 1
 
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
             elif _next != 'C' or temp != 'H':
                 result[rp] = 'T'
@@ -255,7 +257,7 @@ def metaphone(s):
             rp += 1
         elif c == 'W':
             if sp2 == sp and _next == 'H':
-                _next = word[sp2 + 2]
+                _next = toupper(word[sp2 + 2])
                 sp2 += 1
 
             if _next in [65, 69, 73, 79, 85]:
@@ -266,7 +268,7 @@ def metaphone(s):
                 if _next == 'H':
                     result[rp] = 'X'
                 elif _next == 'I':
-                    temp = word[sp2 + 2]
+                    temp = toupper(word[sp2 + 2])
                     if temp == 'O' or temp == 'A':
                         result[rp] = 'X'
                         rp += 1
@@ -322,7 +324,7 @@ def match_rating_codex(s):
         if j >= 7:
             break
 
-        c = upper_char(word[i])
+        c = toupper(word[i])
 
         if c == ' ':
             continue
