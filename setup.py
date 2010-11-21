@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-from setuptools import setup, Extension
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
 
 long_description = open('README.rst').read()
 
 setup(name="jellyfish",
-      version="0.1.2",
+      version="0.2.0-dev",
       platforms=["any"],
       description=("a library for doing approximate and "
                    "phonetic matching of strings."),
@@ -17,8 +19,7 @@ setup(name="jellyfish",
                    "Operating System :: OS Independent",
                    "Programming Language :: Python",
                    "Topic :: Text Processing :: Linguistic"],
-      ext_modules=[Extension("jellyfish", ['jellyfishmodule.c', 'jaro.c',
-                                           'hamming.c', 'levenshtein.c',
-                                           'damerau_levenshtein.c', 'mra.c',
-                                           'soundex.c', 'metaphone.c',
-                                           'nysiis.c', 'porter.c'])])
+      cmdclass={'build_ext': build_ext},
+      ext_modules=[Extension("jellyfish", ['jellyfish.pyx'])],
+      install_requires=["cython"],
+)
