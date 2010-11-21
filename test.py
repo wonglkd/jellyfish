@@ -54,6 +54,16 @@ class JellyfishTestCase(unittest.TestCase):
         for (s1, s2) in cases:
             self.assertEqual(jellyfish.match_rating_codex(s1), s2)
 
+    def test_match_rating_comparison(self):
+        cases = [("Bryne", "Boern", True),
+                 ("Smith", "Smyth", True),
+                 ("Catherine", "Kathryn", True),
+                 ("Michael", "Mike", False),
+                 ]
+
+        for (s1, s2, value) in cases:
+            self.assertEqual(jellyfish.match_rating_comparison(s1, s2), value)
+
     def test_jaro_winkler(self):
         cases = [("dixon", "dicksonx", 0.8133),
                  ("dixon", "dicksonx", 0.8133),

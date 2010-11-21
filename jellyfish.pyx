@@ -5,7 +5,7 @@ cdef extern from "ctype.h":
 
 cdef extern from "stdlib.h":
     void *memset(void *str, int c, size_t n)
-    
+
 cdef char upper_char(char c):
     return <char>toupper(<int>c)
 
@@ -14,7 +14,7 @@ def soundex(s):
     if isinstance(s, unicode):
         s = s.encode('ASCII')
         uni = True
-    
+
     cdef:
         char* word = s
         Py_ssize_t word_len = len(s)
@@ -22,7 +22,7 @@ def soundex(s):
 
     if word_len == 0:
         return "0000"
-    
+
     result[0] = upper_char(word[0])
     result[1] = '0'
     result[2] = '0'
@@ -62,7 +62,7 @@ def soundex(s):
             continue
 
         last_code = code
-        
+
         if loops > 1:
             result[length] = code
             length += 1
@@ -123,6 +123,76 @@ def match_rating_codex(s):
     return codex
 
 
+def match_rating_comparison(s1, s2):
+    s1_codex_py = match_rating_codex(s1)
+    if not s1_codex_py:
+        return -1
+
+    s2_codex_py = match_rating_codex(s2)
+    if not s2_codex_py:
+        return -1
+
+    cdef:
+        char* s1_codex = s1_codex_py
+        char* s2_codex = s2_codex_py
+        char* longer
+
+        char c
+
+        Py_ssize_t s1c_len = len(s1_codex)
+        Py_ssize_t s2c_len = len(s2_codex)
+
+        Py_ssize_t i, j, diff
+
+    if abs(s1c_len - s2c_len) >= 3:
+        return -1
+
+    for i in range(0, _min(s1c_len, s2c_len)):
+        if s1_codex[i] == s2_codex[i]:
+            s1_codex[i] = ' '
+            s2_codex[i] = ' '
+
+    i = s1c_len - 1
+    j = s2c_len - 1
+    while i != 0 and j != 0:
+        if s1_codex[i] == ' ':
+            i -= 1
+            continue
+
+        if s2_codex[j] == ' ':
+            j -= 1
+            continue
+
+        if s1_codex[i] == s2_codex[j]:
+            s1_codex[i] = ' '
+            s2_codex[j] = ' '
+
+        i -= 1
+        j -= 1
+
+    if s1c_len > s2c_len:
+        longer = s1_codex
+    else:
+        longer = s2_codex
+
+    diff = 0
+    for c in longer:
+        if c != ' ':
+            diff += 1
+
+    diff = 6 - diff
+
+    i = s1c_len + s2c_len
+    if i <= 4:
+        return diff >= 5
+    elif i <= 7:
+        return diff >= 4
+    elif i <= 11:
+        return diff >= 3
+
+    return diff >= 2
+
+
 cdef unicode tounicode(char *s):
     return s.decode('UTF-8', 'strict')
 
@@ -169,7 +239,7 @@ cdef Py_ssize_t _levenshtein_distance(unicode s1, unicode s2):
     result = dist[(cols * rows) - 1]
 
     free(dist)
-    
+
     return result
 
 def damerau_levenshtein_distance(s1, s2):
@@ -194,7 +264,7 @@ cdef Py_ssize_t _damerau_levenshtein_distance(unicode s1, unicode s2):
         Py_ssize_t *dist = <Py_ssize_t*>malloc(rows * cols * sizeof(Py_ssize_t))
 
         Py_UNICODE s1_prev, s2_prev
-        
+
     for i in range(0, rows):
         dist[i * cols] = i
 
@@ -205,7 +275,7 @@ cdef Py_ssize_t _damerau_levenshtein_distance(unicode s1, unicode s2):
         for j in range(1, cols):
             s1_prev = s1[i-1]
             s2_prev = s2[j - 1]
-            
+
             if s1_prev == s2_prev:
                 cost = 0
             else:
@@ -249,7 +319,7 @@ cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
         Py_ssize_t trans_count, common_chars
 
         Py_ssize_t i, j, k
-        
+
     ying_length = len(ying)
     yang_length = len(yang)
 
@@ -339,7 +409,7 @@ cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
         if i:
             weight += i * 0.1 * (1.0 - weight)
 
-        
+
         # Optionally adjust for long strings. */
         # After agreeing beginning chars, at least two more must agree and
         # the agreeing characters must be > .5 of remaining characters.
