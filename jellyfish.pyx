@@ -306,8 +306,7 @@ cdef inline int _notnum(char c):
 cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
                           int winklerize):
     cdef:
-        char* ying_flag = <char*>0
-        char* yang_flag = <char*>0
+        char* flags
 
         double weight
 
@@ -331,13 +330,7 @@ cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
         search_range = yang_length
         min_length = ying_length
 
-    ying_flag = <char*>calloc(ying_length + 1, sizeof(char))
-    yang_flag = <char*>calloc(yang_length + 1, sizeof(char))
-
-    # Why were these there in addition to calloc?
-    # Nothing is ever compared against ' '.
-    # memset(ying_flag, ' ', ying_length)
-    # memset(yang_flag, ' ', yang_length)
+    flags = <char*>calloc(ying_length + yang_length, sizeof(char))
 
     search_range = (search_range / 2) - 1
     if search_range < 0:
@@ -357,25 +350,24 @@ cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
             hilim = yang_length - 1
 
         for j in range(lowlim, hilim + 1):
-            if yang_flag[j] != '1' and yang[j] == ying[i]:
-                yang_flag[j] = '1'
-                ying_flag[i] = '1'
+            if flags[ying_length + j] != '1' and yang[j] == ying[i]:
+                flags[ying_length + j] = '1'
+                flags[i] = '1'
                 common_chars += 1
                 break
 
     # If no characters in common - return
     if common_chars == 0:
-        free(ying_flag)
-        free(yang_flag)
+        free(flags)
         return 0.0
 
     # Count the number of transpositions
     k = 0
     trans_count = 0
     for i in range(0, ying_length):
-        if ying_flag[i] == '1':
+        if flags[i] == '1':
             for j in range(k, yang_length):
-                if yang_flag[j] == '1':
+                if flags[ying_length + j] == '1':
                     k = j + 1
                     break
 
@@ -419,8 +411,7 @@ cdef double _jaro_winkler(unicode ying, unicode yang, int long_tolerance,
                            (<double>(common_chars - i - 1) /
                             <double>(ying_length + yang_length - i * 2 + 2)))
 
-    free(ying_flag)
-    free(yang_flag)
+    free(flags)
 
     return weight
 
