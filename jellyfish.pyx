@@ -99,6 +99,9 @@ def metaphone(s):
         Py_ssize_t sp2 = 0
         Py_ssize_t rp = 0
 
+        object str_result
+        unicode uni_result
+
     c = word[0]
     if c:
         _next = word[1]
@@ -289,7 +292,14 @@ def metaphone(s):
                 result[rp] = ' '
                 rp += 1
 
-    return result
+    if uni:
+        uni_result = result.decode('ASCII')
+        free(result)
+        return uni_result
+
+    str_result = result
+    free(result)
+    return str_result
 
 
 def match_rating_codex(s):
