@@ -31,6 +31,20 @@ class JellyfishTestCase(unittest.TestCase):
         for (s1, code) in cases:
             self.assertEqual(jellyfish.soundex(s1), code)
 
+    def test_metaphone(self):
+        cases = [("metaphone", 'MTFN'),
+                 ("wHErE", "WR"),
+                 ("shell", "XL"),
+                 ("this is a difficult string", "0S IS A TFKLT STRNK"),
+                 ("aeromancy", "ERMNS"),
+                 ("Antidisestablishmentarianism", "ANTTSSTBLXMNTRNSM"),
+                 ("sunlight labs", "SNLT LBS"),
+                 ("sonlite laabz", "SNLT LBS"),
+                 ]
+
+        for (s1, code) in cases:
+            self.assertEqual(jellyfish.metaphone(s1), code)
+
     def test_damerau_levenshtein_distance(self):
         cases = [("", "", 0),
                  ("abc", "", 3),

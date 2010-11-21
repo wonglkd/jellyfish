@@ -77,6 +77,221 @@ def soundex(s):
     return result
 
 
+def metaphone(s):
+    s = s.upper()
+
+    cdef short uni = False
+    if isinstance(s, unicode):
+        s = s.encode('ASCII')
+        uni = True
+
+    cdef:
+        char* word = s
+        Py_ssize_t word_len = len(s)
+
+        char* result = <char*>calloc(word_len * 2 + 1, sizeof(char))
+        char* r
+
+        char c, _next
+        char temp = 0
+
+        Py_ssize_t sp = 0
+        Py_ssize_t sp2 = 0
+        Py_ssize_t rp = 0
+
+    c = word[0]
+    if c:
+        _next = word[1]
+
+        if ((c == 'K' and _next == 'N') or
+            (c == 'G' and _next == 'N') or
+            (c == 'P' and _next == 'N') or
+            (c == 'A' and _next == 'C') or
+            (c == 'W' and _next == 'R') or
+            (c == 'A' and _next == 'E')):
+
+            sp += 1
+
+    _next = word[sp]
+    sp2 = sp - 1
+    rp = 0
+    while sp2 < word_len:
+        sp2 += 1
+        c = _next
+        _next = word[sp2 + 1]
+
+        if c == _next and c != 'C':
+            continue
+
+        if c in [65, 69, 73, 79, 85]:  # AEIOU
+            if sp2 == sp or word[sp2 - 1] == ' ':
+                result[rp] = c;
+                rp += 1
+        elif c == 'B':
+            if (not (sp2 > sp and word[sp2 - 1] == 'M')) or _next:
+                result[rp] = 'B'
+                rp += 1
+        elif c == 'C':
+            if (_next == 'I' and word[sp2 + 2] == 'A') or _next == 'H':
+                result[rp] = 'X'
+                rp += 1
+
+                _next = word[sp2 + 2]
+                sp2 += 1
+            elif _next == 'I' or _next == 'E' or _next == 'Y':
+                result[rp] = 'S'
+                rp += 1
+
+                _next = word[sp2 + 2]
+                sp2 += 1
+            else:
+                result[rp] = 'K'
+                rp += 1
+        elif c == 'D':
+            temp = word[sp2 + 2]
+            if _next == 'G' and (temp == 'E' or temp == 'Y' or temp == 'I'):
+                result[rp] = 'J'
+                rp += 1
+
+                sp2 += 2
+                next = word[sp2 + 1]
+            else:
+                result[rp] = 'T'
+                rp += 1
+        elif c == 'F':
+            result[rp] = 'F'
+            rp += 1
+        elif c == 'G':
+            if _next == 'I' or _next == 'E' or _next == 'Y':
+                result[rp] = 'J'
+                rp += 1
+            elif _next != 'H' and _next != 'N':
+                result[rp] = 'K'
+                rp += 1
+            elif _next == 'H':
+                temp = word[sp2 + 2]
+                if temp in [65, 69, 73, 79, 85]:
+                    sp2 += 1
+                    _next = word[sp2 + 1]
+            elif _next != 'N':
+                result[rp] = 'K'
+                rp += 1
+        elif c == 'H':
+            if sp2 == sp or _next in [65, 69, 73, 79, 85]:
+                result[rp] = 'H'
+                rp += 1
+            else:
+                # We don't roll this into the above if because we can't
+                # grab temp until we know sp2 != sp (sp may be 0)
+                temp = word[sp2 - 1]
+                if temp in [65, 69, 73, 79, 85]:
+                    result[rp] = 'H'
+                    rp += 1
+        elif c == 'J':
+            result[rp] = 'J'
+            rp += 1
+        elif c == 'K':
+            if sp2 == sp or word[sp2 - 1] != 'C':
+                result[rp] = 'K'
+                rp += 1
+        elif c == 'L':
+            result[rp] = 'L'
+            rp += 1
+        elif c == 'M':
+            result[rp] = 'M'
+            rp += 1
+        elif c == 'N':
+            result[rp] = 'N'
+            rp += 1
+        elif c == 'P':
+            result[rp] = 'F'
+            rp += 1
+
+            if _next == 'H':
+                _next = word[sp2 + 2]
+                sp2 += 1
+        elif c == 'Q':
+            result[rp] = 'K'
+            rp += 1
+        elif c == 'R':
+            result[rp] = 'R'
+            rp += 1
+        elif c == 'S':
+            if _next == 'H':
+                result[rp] = 'X'
+                rp += 1
+
+                _next = word[sp2 + 2]
+                sp2 += 1
+            elif _next == 'I':
+                temp = word[sp2 + 2]
+                if temp == 'O' or temp == 'A':
+                    result[rp] = 'X'
+                    rp += 1
+                    sp2 += 2
+                    _next = word[sp2 + 1]
+            else:
+                result[rp] = 'S'
+                rp += 1
+        elif c == 'T':
+            temp = word[sp2 + 2]
+            if _next == 'I' and (temp == 'A' or temp == 'O'):
+                result[rp] = 'X'
+                rp += 1
+            elif _next == 'H':
+                result[rp] = '0'
+                rp += 1
+
+                _next = word[sp2 + 2]
+                sp2 += 1
+            elif _next != 'C' or temp != 'H':
+                result[rp] = 'T'
+                rp += 1
+        elif c == 'V':
+            result[rp] = 'F'
+            rp += 1
+        elif c == 'W':
+            if sp2 == sp and _next == 'H':
+                _next = word[sp2 + 2]
+                sp2 += 1
+
+            if _next in [65, 69, 73, 79, 85]:
+                result[rp] = 'W'
+                rp += 1
+        elif c == 'X':
+            if sp2 == sp:
+                if _next == 'H':
+                    result[rp] = 'X'
+                elif _next == 'I':
+                    temp = word[sp2 + 2]
+                    if temp == 'O' or temp == 'A':
+                        result[rp] = 'X'
+                        rp += 1
+                    else:
+                        result[rp] = 'S'
+                        rp += 1
+                else:
+                    result[rp] = 'S'
+                    rp += 1
+            else:
+                result[rp] = 'K'
+                result[rp + 1] = 'S'
+                rp += 2
+        elif c == 'Y':
+            if _next in [65, 69, 73, 79, 85]:
+                result[rp] = 'Y'
+                rp += 1
+        elif c == 'Z':
+            result[rp] = 'S'
+            rp += 1
+        elif c == ' ':
+            if result[rp] != ' ':
+                result[rp] = ' '
+                rp += 1
+
+    return result
+
+
 def match_rating_codex(s):
     cdef short uni = False
     if isinstance(s, unicode):
