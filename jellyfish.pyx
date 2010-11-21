@@ -207,7 +207,7 @@ def levenshtein_distance(s1, s2):
 
     return _levenshtein_distance(s1, s2)
 
-cdef Py_ssize_t _levenshtein_distance(unicode s1, unicode s2):
+cdef unsigned _levenshtein_distance(unicode s1, unicode s2):
     cdef:
         Py_ssize_t s1_len = len(s1)
         Py_ssize_t s2_len = len(s2)
@@ -217,7 +217,8 @@ cdef Py_ssize_t _levenshtein_distance(unicode s1, unicode s2):
 
         unsigned result, d1, d2, d3
 
-        unsigned *dist = <unsigned*>malloc(rows * cols * sizeof(unsigned))
+        unsigned* dist = <unsigned*>malloc(rows * cols * sizeof(unsigned))
+
 
     for i in range(0, rows):
         dist[i * cols] = i
@@ -250,18 +251,18 @@ def damerau_levenshtein_distance(s1, s2):
 
     return _damerau_levenshtein_distance(s1, s2)
 
-cdef Py_ssize_t _damerau_levenshtein_distance(unicode s1, unicode s2):
+cdef unsigned _damerau_levenshtein_distance(unicode s1, unicode s2):
     cdef:
         Py_ssize_t s1_len = len(s1)
         Py_ssize_t s2_len = len(s2)
         Py_ssize_t rows = s1_len + 1
         Py_ssize_t cols = s2_len + 1
 
-        Py_ssize_t i, j
-        Py_ssize_t d1, d2, d3, d_now
-        unsigned short cost
+        unsigned i, j
+        unsigned d1, d2, d3, d_now
+        unsigned cost
 
-        Py_ssize_t *dist = <Py_ssize_t*>malloc(rows * cols * sizeof(Py_ssize_t))
+        unsigned *dist = <unsigned*>malloc(rows * cols * sizeof(unsigned))
 
         Py_UNICODE s1_prev, s2_prev
 
@@ -273,13 +274,10 @@ cdef Py_ssize_t _damerau_levenshtein_distance(unicode s1, unicode s2):
 
     for i in range(1, rows):
         for j in range(1, cols):
-            s1_prev = s1[i-1]
+            s1_prev = s1[i - 1]
             s2_prev = s2[j - 1]
 
-            if s1_prev == s2_prev:
-                cost = 0
-            else:
-                cost = 1
+            cost = s1_prev == s2_prev
 
             d1 = dist[((i - 1) * cols) + j] + 1;
             d2 = dist[(i * cols) + (j - 1)] + 1;
