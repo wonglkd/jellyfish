@@ -1,4 +1,5 @@
 from libc.stdlib cimport *
+from libc.string cimport strdup, strncmp
 
 # libc toupper is complicated by locale check, etc.
 # Since most of these algorithms are only defined over plain ASCII characters
@@ -302,6 +303,157 @@ def metaphone(s):
     str_result = result
     free(result)
     return str_result
+
+
+def nysiis(s):
+    cdef short uni = False
+    if isinstance(s, unicode):
+        s = s.encode('ASCII')
+        uni = True
+
+    cdef:
+        char* word = s
+        Py_ssize_t word_len = len(word)
+
+        char c1, c2, c3
+
+        char* copy = strdup(word)
+        char* code = <char*>malloc((word_len + 1) * sizeof(char))
+
+        Py_ssize_t p = 0
+        Py_ssize_t cp = 0
+
+        unicode uni_code
+        object str_code
+
+    if not strncmp(copy, "MAC", 3):
+        copy[1] = 'C'
+    elif not strncmp(copy, "KN", 2):
+        copy[0] = 'N'
+    elif copy[0] == 'K':
+        copy[0] = 'C'
+    elif not strncmp(copy, "PH", 2):
+        copy[0] = 'F'
+        copy[1] = 'F'
+    elif not strncmp(copy, "SCH", 3):
+        copy[1] = 'S'
+        copy[2] = 'S'
+
+    # Step 2
+    c1 = copy[word_len - 1]
+    if c1 == 'E':
+        c2 = copy[word_len - 2]
+        if c2 == 'E' or c2 == 'I':
+            copy[word_len - 1] = ' '
+            copy[word_len - 2] = 'Y'
+    elif c1 == 'T':
+        c2 = copy[word_len - 2]
+        if c2 == 'D' or c2 == 'R' or c2 == 'N':
+            copy[word_len - 1] = ' '
+            copy[word_len - 2] = 'D'
+    elif c1 == 'D':
+        c2 = copy[word_len - 2]
+        if c2 == 'R' or c2 == 'N':
+            copy[word_len - 1] = ' '
+            copy[word_len - 2] = 'D'
+
+    # Step 3
+    code[0] = toupper(copy[0])
+
+    cp = 1
+    p = 1
+
+    while True:
+        c1 = toupper(copy[p])
+        if not c1 or c1 == ' ':
+            break
+
+        # Step 5
+        if c1 == 'E':
+            if toupper(copy[p + 1]) == 'V':
+                code[cp] = 'A'
+                code[cp + 1] = 'F'
+                cp += 1
+            else:
+                code[cp] = 'A'
+        elif c1 in ['A', 'I', 'O', 'U']:
+            code[cp] = 'A'
+        elif c1 == 'Q':
+            code[cp] = 'G'
+        elif c1 == 'Z':
+            code[cp] = 'S'
+        elif c1 == 'M':
+            code[cp] = 'N'
+        elif c1 == 'K':
+            if toupper(copy[p + 1]) == 'N':
+                code[cp] = 'N'
+            else:
+                code[cp] = 'C'
+        elif c1 == 'S':
+            if toupper(copy[p + 1]) == 'C' and toupper(copy[p + 2]) == 'H':
+                code[cp] = 'S'
+                code[cp + 1] = 'S'
+                code[cp + 2] = 'S'
+                cp += 2
+            else:
+                code[cp] = 'S'
+        elif c1 == 'P':
+            if toupper(copy[p + 1]) == 'H':
+                code[cp] = 'F'
+                code[cp + 1] = 'F'
+                cp += 1
+            else:
+                code[cp] = 'P'
+        elif c1 == 'H':
+            c2 = toupper(copy[p + 1])
+            c3 = toupper(copy[p - 1])
+            if c2 not in [65, 69, 73, 79, 85] and c3 not in [65, 69, 73, 79, 85]:
+                code[cp] = c3
+            else:
+                code[cp] = 'H'
+        elif c1 == 'W':
+            c2 = toupper(copy[p - 1])
+            if c2 in [65, 69, 73, 79, 85]:
+                code[cp] = c2
+            else:
+                code[cp] = 'W'
+        else:
+            code[cp] = c1
+
+        # Step 6
+        if code[cp] != code[cp - 1] or cp == 1:
+            cp += 1
+
+        p += 1
+
+    code[cp] = 0
+
+    # Step 7
+    c1 = code[cp - 1]
+    if c1 == 'S':
+        code[cp - 1] = 0
+        cp -= 1
+    elif c1 == 'Y' and code[cp - 2] == 'A':
+        code[cp - 1] = 0
+        code[cp - 2] = 'Y'
+        cp -= 2
+
+    # There is no step 8!
+
+    # Step 9
+    if code[cp - 1] == 'A':
+        code[cp - 1] = 0
+
+    free(copy)
+
+    if uni:
+        uni_code = code.decode('ASCII')
+        free(code)
+        return uni_code
+
+    str_code = code
+    free(code)
+    return str_code
 
 
 def match_rating_codex(s):
