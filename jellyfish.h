@@ -1,7 +1,22 @@
 #ifndef _JELLYFISH_H_
 #define _JELLYFISH_H_
 
-#include <stdbool.h>
+// changes to make it compile on VC, no support for C99
+typedef int bool;
+#define false 0
+#define true 1
+#ifndef inline
+	#define inline __inline
+#endif
+#ifndef isnan
+	#define isnan _isnan
+#endif
+#include <float.h>
+#ifdef _MSC_VER
+	#define INFINITY (DBL_MAX+DBL_MAX)
+	#define NaN (INFINITY-INFINITY)
+#endif
+//#include <stdbool.h>
 #include <stdlib.h>
 
 #ifndef MIN
