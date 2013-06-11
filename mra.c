@@ -7,13 +7,14 @@ int match_rating_comparison(const char *s1, const char *s2) {
     size_t i, j;
     int diff;
     char *longer;
-
-    char *s1_codex = match_rating_codex(s1);
+    char *s1_codex;
+    char *s2_codex;
+	s1_codex = match_rating_codex(s1);
     if (!s1_codex) {
         return -1;
     }
 
-    char *s2_codex = match_rating_codex(s2);
+	s2_codex = match_rating_codex(s2);
     if (!s2_codex) {
         free(s1_codex);
         return -1;
@@ -37,7 +38,6 @@ int match_rating_comparison(const char *s1, const char *s2) {
 
     i = s1c_len - 1;
     j = s2c_len - 1;
-
     while (i != 0 && j != 0) {
         if (s1_codex[i] == ' ') {
             i--;
@@ -74,8 +74,8 @@ int match_rating_comparison(const char *s1, const char *s2) {
     free(s2_codex);
 
     diff = 6 - diff;
-    i = s1c_len + s2c_len;
 
+    i = s1c_len + s2c_len;
     if (i <= 4) {
         return diff >= 5;
     } else if (i <= 7) {
